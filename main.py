@@ -51,6 +51,24 @@ class UIManager:
         else:
             print(f"Page '{pageName}' Not Found")
 
+    def fadeToPage(self, pageName, time):
+        if pageName in self.pageStack:
+            self.activePage.root.setTransparency(TransparencyAttrib.MAlpha)
+            self.pageStack[pageName].root.setTransparency(TransparencyAttrib.MAlpha)
+            self.pageStack[pageName].fadeIn(time)
+
+            def final(t):
+                self.lastPage = self.activePage
+                self.activePage = self.pageStack[pageName]
+
+            base.doMethodLater(
+                time, self.activePage.fadeOut, "fadeToPage", extraArgs=[time]
+            )
+
+            base.doMethodLater(time, final, "fadeToPage_final")
+        else:
+            print(f"Page '{pageName}' Not Found")
+
     def goBack(self):
         if self.lastPage is not None:
             self.activePage.hide()
@@ -189,6 +207,20 @@ class UIManager:
             parentWindow.children.append(self)
             parentWindow.children_dict[self.name] = self
 
+        def fadeIn(self, time):
+            self.root.setTransparency(TransparencyAttrib.MAlpha)
+            self.root.setAlphaScale(0)
+            self.root.show()
+            self.root.colorScaleInterval(
+                time, (1, 1, 1, 1), startColorScale=(0, 0, 0, 0)
+            ).start()
+
+        def fadeOut(self, time):
+            self.root.setTransparency(TransparencyAttrib.MAlpha)
+            self.root.colorScaleInterval(
+                time, (0, 0, 0, 0), startColorScale=(1, 1, 1, 1)
+            ).start()
+
 
 UIManager = UIManager()
 
@@ -270,7 +302,7 @@ AUTH = AUTH()
 
 class GUI:
     def setTimeNodes(self, task):
-        self.lockScreenTimeNode.setText(time.strftime("%I:%M:%S"))
+        self.lockScreenTimeNode.setText(time.strftime("%I:%M:%S").lstrip("0"))
         self.lockScreenDateNode.setText(time.strftime("%A, %B %Y"))
         return task.cont
 
@@ -285,13 +317,18 @@ class GUI:
             "./src/fonts/SegoeUIVF.ttf",
             pixelsPerUnit=200,
         )
-        self.lockScreenBackgroundImage = OnscreenImage(
+        self.lockScreenBackgroundButton = DirectButton(
             image="./src/img/lockBackground.jpg",
-            scale=(1 * (1920 / 1080), 1, 1),
+            image_scale=(1 * (1920 / 1080), 1, 1),
+            frameSize=(-1 * (1920 / 1080), 1 * (1920 / 1080), -1, 1),
             parent=self.lockScreenWindow.root,
+            relief=None,
+            geom=None,
+            command=lambda: UIManager.fadeToPage("login", 0.15),
         )
+        self.lockScreenBackgroundButton.setTransparency(TransparencyAttrib.MAlpha)
         self.lockScreenTimeNode = OnscreenText(
-            text=time.strftime("%I:%M:%S"),
+            text=time.strftime("%I:%M:%S").lstrip("0"),
             font=self.win11Font,
             fg=(1, 1, 1, 1),
             pos=(0, 0.45),
@@ -315,6 +352,14 @@ class GUI:
             parent=self.lockScreenWindow.root,
         )
         self.lockScreenWifiImage.setTransparency(TransparencyAttrib.MAlpha)
+
+        self.loginScreenBackgroundImage = OnscreenImage(
+            image="./src/img/lockBackground_blr.jpg",
+            scale=(1 * (1920 / 1080), 1, 1),
+            pos=(0, 0, 0),
+            parent=self.loginWindow.root,
+        )
+        self.loginScreenBackgroundImage.setTransparency(TransparencyAttrib.MAlpha)
 
         self.lockScreenWindow.show()
         base.taskMgr.add(self.setTimeNodes, "setTimeNodes", delay=1)
