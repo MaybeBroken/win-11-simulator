@@ -371,12 +371,12 @@ class GUI:
         self.loginScreenUsernameProfileImage.setTransparency(TransparencyAttrib.MAlpha)
         self.loginScreenPasswordEntry = DirectEntry(
             text="",
-            scale=0.3,
+            scale=1,
             initialText="Password",
             numLines=1,
             focus=1,
             parent=self.loginWindow.root,
-            pos=(0, 0, 0.2),
+            pos=(-0.2, 0, -0.2),
             frameColor=(0, 0, 0, 0),
             text_fg=(1, 1, 1, 1),
             text_font=self.win11Font,
