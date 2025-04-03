@@ -329,6 +329,7 @@ class GUI:
             command=lambda: [
                 UIManager.fadeToPage("login", 0.15),
             ],
+            pressEffect=False,
         )
         self.lockScreenBackgroundButton.setTransparency(TransparencyAttrib.MAlpha)
         self.lockScreenTimeNode = OnscreenText(
@@ -351,8 +352,8 @@ class GUI:
         )
         self.lockScreenWifiImage = OnscreenImage(
             image="./src/img/wifi.png",
-            scale=(0.035 * (1280 / 942), 0.035, 0.035),
-            pos=(1, 0, -0.9),
+            scale=(0.025 * (1280 / 942), 0.025, 0.025),
+            pos=(1.5, 0, -0.9),
             parent=self.lockScreenWindow.root,
         )
         self.lockScreenWifiImage.setTransparency(TransparencyAttrib.MAlpha)
@@ -367,7 +368,7 @@ class GUI:
                 self.restoreDefaultTextOnFocusOut(self.loginScreenPasswordEntry),
                 self.restoreDefaultTextOnFocusOut(self.loginScreenUsernameEntry),
             ],
-            pressEffect=False,  # Disable visual scale change on click
+            pressEffect=False,
         )
         self.loginScreenBackgroundImage.setTransparency(TransparencyAttrib.MAlpha)
 
