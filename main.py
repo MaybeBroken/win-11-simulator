@@ -326,7 +326,9 @@ class GUI:
             parent=self.lockScreenWindow.root,
             relief=None,
             geom=None,
-            command=lambda: UIManager.fadeToPage("login", 0.15),
+            command=lambda: [
+                UIManager.fadeToPage("login", 0.15),
+            ],
         )
         self.lockScreenBackgroundButton.setTransparency(TransparencyAttrib.MAlpha)
         self.lockScreenTimeNode = OnscreenText(
@@ -355,11 +357,17 @@ class GUI:
         )
         self.lockScreenWifiImage.setTransparency(TransparencyAttrib.MAlpha)
 
-        self.loginScreenBackgroundImage = OnscreenImage(
+        self.loginScreenBackgroundImage = DirectButton(
             image="./src/img/lockBackground_blr.jpg",
             scale=(1 * (1920 / 1080), 1, 1),
-            pos=(0, 0, 0),
             parent=self.loginWindow.root,
+            relief=None,
+            geom=None,
+            command=lambda: [
+                self.restoreDefaultTextOnFocusOut(self.loginScreenPasswordEntry),
+                self.restoreDefaultTextOnFocusOut(self.loginScreenUsernameEntry),
+            ],
+            pressEffect=False,  # Disable visual scale change on click
         )
         self.loginScreenBackgroundImage.setTransparency(TransparencyAttrib.MAlpha)
 
@@ -381,19 +389,55 @@ class GUI:
             frameColor=(0.5, 0.5, 0.5, 0.5),
             text_fg=(1, 1, 1, 1),
             text_font=self.win11Font,
-            text_align=TextNode.ALeft,
+            text_align=TextNode.ACenter,
             relief=DGG.FLAT,
         )
 
-        def clearTextOnFocus():
-            if self.loginScreenPasswordEntry.get() == "Password":
-                self.loginScreenPasswordEntry.enterText("")
-
-        self.loginScreenPasswordEntry.bind(DGG.B1PRESS, lambda _: clearTextOnFocus())
+        self.loginScreenPasswordEntry.bind(
+            DGG.B1PRESS, lambda _: self.clearTextOnFocus(self.loginScreenPasswordEntry)
+        )
         self.loginScreenPasswordEntry.setTransparency(TransparencyAttrib.MAlpha)
+
+        self.loginScreenUsernameEntry = DirectEntry(
+            text="",
+            scale=0.05,
+            initialText="Username",
+            numLines=1,
+            focus=0,
+            parent=self.loginWindow.root,
+            pos=(0, 0, 0),
+            frameColor=(0.5, 0.5, 0.5, 0.5),
+            text_fg=(1, 1, 1, 1),
+            text_font=self.win11Font,
+            text_align=TextNode.ACenter,
+            relief=DGG.FLAT,
+        )
+        self.loginScreenUsernameEntry.bind(
+            DGG.B1PRESS, lambda _: self.clearTextOnFocus(self.loginScreenUsernameEntry)
+        )
+        self.loginScreenUsernameEntry.setTransparency(TransparencyAttrib.MAlpha)
 
         self.lockScreenWindow.show()
         base.taskMgr.add(self.setTimeNodes, "setTimeNodes", delay=1)
+
+    def clearTextOnFocus(self, entry: DirectEntry):
+        if entry.get() in ["Password", "Username"]:
+            entry.enterText("")
+        if entry == self.loginScreenPasswordEntry:
+            self.restoreDefaultTextOnFocusOut(self.loginScreenUsernameEntry)
+        elif entry == self.loginScreenUsernameEntry:
+            self.restoreDefaultTextOnFocusOut(self.loginScreenPasswordEntry)
+        entry["focus"] = 1
+        entry.setFocus()
+
+    def restoreDefaultTextOnFocusOut(self, entry: DirectEntry):
+        if entry.get().strip() == "":
+            if entry == self.loginScreenPasswordEntry:
+                entry.enterText("Password")
+            elif entry == self.loginScreenUsernameEntry:
+                entry.enterText("Username")
+        entry["focus"] = 0
+        entry.setFocus()
 
 
 class OS(ShowBase):
