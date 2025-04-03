@@ -60,6 +60,7 @@ class UIManager:
             def final(t):
                 self.lastPage = self.activePage
                 self.activePage = self.pageStack[pageName]
+                self.lastPage.hide()
 
             base.doMethodLater(
                 time, self.activePage.fadeOut, "fadeToPage", extraArgs=[time]
@@ -360,6 +361,27 @@ class GUI:
             parent=self.loginWindow.root,
         )
         self.loginScreenBackgroundImage.setTransparency(TransparencyAttrib.MAlpha)
+
+        self.loginScreenUsernameProfileImage = OnscreenImage(
+            image="./src/img/profile.png",
+            scale=(0.2, 0.2, 0.2),
+            pos=(0, 0, 0.35),
+            parent=self.loginWindow.root,
+        )
+        self.loginScreenUsernameProfileImage.setTransparency(TransparencyAttrib.MAlpha)
+        self.loginScreenPasswordEntry = DirectEntry(
+            text="",
+            scale=0.3,
+            initialText="Password",
+            numLines=1,
+            focus=1,
+            parent=self.loginWindow.root,
+            pos=(0, 0, 0.2),
+            frameColor=(0, 0, 0, 0),
+            text_fg=(1, 1, 1, 1),
+            text_font=self.win11Font,
+            text_scale=0.045,
+        )
 
         self.lockScreenWindow.show()
         base.taskMgr.add(self.setTimeNodes, "setTimeNodes", delay=1)
