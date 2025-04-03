@@ -9,6 +9,7 @@ from panda3d.core import (
     CardMaker,
     loadPrcFileData,
     TransparencyAttrib,
+    TextNode,
 )
 from json import loads, dump
 import os
@@ -371,17 +372,25 @@ class GUI:
         self.loginScreenUsernameProfileImage.setTransparency(TransparencyAttrib.MAlpha)
         self.loginScreenPasswordEntry = DirectEntry(
             text="",
-            scale=0.3,
+            scale=0.05,
             initialText="Password",
             numLines=1,
-            focus=1,
+            focus=0,
             parent=self.loginWindow.root,
-            pos=(0, 0, 0.2),
-            frameColor=(0, 0, 0, 0),
+            pos=(0, 0, -0.15),
+            frameColor=(0.5, 0.5, 0.5, 0.5),
             text_fg=(1, 1, 1, 1),
             text_font=self.win11Font,
-            text_scale=0.045,
+            text_align=TextNode.ALeft,
+            relief=DGG.FLAT,
         )
+
+        def clearTextOnFocus():
+            if self.loginScreenPasswordEntry.get() == "Password":
+                self.loginScreenPasswordEntry.enterText("")
+
+        self.loginScreenPasswordEntry.bind(DGG.B1PRESS, lambda _: clearTextOnFocus())
+        self.loginScreenPasswordEntry.setTransparency(TransparencyAttrib.MAlpha)
 
         self.lockScreenWindow.show()
         base.taskMgr.add(self.setTimeNodes, "setTimeNodes", delay=1)
