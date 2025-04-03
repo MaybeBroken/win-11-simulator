@@ -27,7 +27,7 @@ text-font /Windows 11/scripts/src/SegoeUIVF-Regular-Small.ttf
 undecorated true
 clock-mode limited
 clock-frame-rate 0
-show-frame-rate-meter 1
+show-frame-rate-meter 0
 frame-rate-meter-update-interval 0.25
 sync-video 0
 """,
