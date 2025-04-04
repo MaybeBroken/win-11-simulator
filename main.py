@@ -452,6 +452,29 @@ class GUI:
             pressEffect=False,
         )
 
+        self.hotbar = DirectFrame(
+            frameSize=(-1, 1, -0.1, 0.1),
+            frameColor=(1, 1, 1, 1),
+            pos=(0, 0, -1),
+            parent=self.homeScreen,
+        )
+
+        self.winIcon = DirectButton(
+            image="./src/img/windows11icon.png",
+            frameSize=(-0.5, 0.5, -0.5, 0.5),
+            frameColor=(0,0,0,0),
+            scale=(0.05, 1, 0.05),
+            image_scale=(0.7, 1, 1),
+            image_pos=(0, 0, 0),
+            pos=(0, 0, -0.95),
+            parent=self.homeScreen,
+            relief=DGG.FLAT,
+            pressEffect=False,
+        )
+
+        self.winIcon.setTransparency(TransparencyAttrib.MAlpha)
+
+
         self.loginScreenBackgroundImage.setTransparency(TransparencyAttrib.MAlpha)
         self.loginScreenUsernameEntry.bind(
             DGG.B1PRESS, lambda _: self.clearTextOnFocus(self.loginScreenUsernameEntry)
