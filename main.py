@@ -474,6 +474,21 @@ class GUI:
 
         self.winIcon.setTransparency(TransparencyAttrib.MAlpha)
 
+        self.fileExplorerIcon = DirectButton(
+            image="./src/img/windows11fileicon.png",
+            frameSize=(-1, 1, -1, 1),
+            frameColor=(0, 0, 0, 0),
+            scale=(0.05, 1, 0.05),
+            image_scale=(0.6, 1, 1),
+            image_pos=(0, 0, 0),
+            pos=(-0.07, 0, -0.95),
+            parent=self.homeScreen,
+            relief=DGG.FLAT,
+            pressEffect=False,
+        )
+
+        self.fileExplorerIcon.setTransparency(TransparencyAttrib.MAlpha)
+
 
         self.loginScreenBackgroundImage.setTransparency(TransparencyAttrib.MAlpha)
         self.loginScreenUsernameEntry.bind(
