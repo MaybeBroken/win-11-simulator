@@ -274,8 +274,8 @@ FILEMGR = FILEMGR()
 
 
 class AUTH:
-    def login(self):
-        state = self.verify(self.userNameEntry.get(), self.passwordEntry.get())
+    def login(self, username, password):
+        state = self.verify(username, password)
         if state is _state.PASS:
             print("Logged in")
         elif state is _state.VAL_INVALID:
@@ -293,7 +293,7 @@ class AUTH:
                 return _state.VAL_INVALID
         elif len(username) == 0:
             return _state.ERR
-        elif len(enumerate(GLOBALMEM["AUTH"]["users"])) == 0:
+        elif len(GLOBALMEM["AUTH"]["users"]) == 0:
             return _state.PASS
         else:
             return _state.MEM_INVALID
@@ -413,6 +413,21 @@ class GUI:
             text_align=TextNode.ACenter,
             relief=DGG.FLAT,
         )
+
+        self.loginButton = DirectButton(
+            text="Login",
+            scale=0.09,
+            pos=(0, 0, -0.3),
+            parent=self.loginWindow.root,
+            frameColor=(0.2, 0.1, 0.3, 1),
+            text_fg=(1, 1, 1, 1),
+            text_font=self.win11Font,
+            relief=DGG.FLAT,
+            text_align=TextNode.ACenter,
+            command=lambda: AUTH.login(self.loginScreenUsernameEntry.get(), self.loginScreenPasswordEntry.get()),
+        )
+        self.loginButton.setTransparency(TransparencyAttrib.MAlpha)
+
         self.loginScreenUsernameEntry.bind(
             DGG.B1PRESS, lambda _: self.clearTextOnFocus(self.loginScreenUsernameEntry)
         )
