@@ -15,6 +15,7 @@ from json import loads, dump
 import os
 import atexit
 import time
+from direct.showbase.Audio3DManager import Audio3DManager
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 GLOBALMEM: dict = {}
@@ -278,6 +279,19 @@ class AUTH:
         state = self.verify(username, password)
         if state is _state.PASS:
             print("Logged in")
+            UIManager.fadeToPage("home", 0.1)
+            def playSound(soundFilePath="./src/audio/startup.m4a"):
+                try:
+                    audio3d = Audio3DManager(base.sfxManagerList[0], base.camera)
+                    sound = audio3d.loadSfx(soundFilePath)
+                    if sound:
+                        sound.play()
+                    else:
+                        print(f"Failed to load sound: {soundFilePath}")
+                except Exception as e:
+                    print(f"Error playing sound: {e}")
+            playSound()
+
         elif state is _state.VAL_INVALID:
             print("Invalid Password")
         elif state is _state.MEM_INVALID:
@@ -314,6 +328,7 @@ class GUI:
         self.windows = []
         self.lockScreenWindow = UIManager.Window("lockScreen", UIManager)
         self.loginWindow = UIManager.Window("login", UIManager)
+        self.homeScreen = UIManager.Window("home", UIManager)
 
         self.win11Font = self.base.loader.loadFont(
             "./src/fonts/SegoeUIVF.ttf",
@@ -428,6 +443,16 @@ class GUI:
         )
         self.loginButton.setTransparency(TransparencyAttrib.MAlpha)
 
+        self.homeScreen = DirectButton(
+            image="./src/img/windows11background.png",
+            scale=(1 * (1920 / 1080), 1, 1),
+            parent=self.homeScreen.root,
+            relief=None,
+            geom=None,
+            pressEffect=False,
+        )
+        
+        self.loginScreenBackgroundImage.setTransparency(TransparencyAttrib.MAlpha)
         self.loginScreenUsernameEntry.bind(
             DGG.B1PRESS, lambda _: self.clearTextOnFocus(self.loginScreenUsernameEntry)
         )
