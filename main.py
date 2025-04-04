@@ -279,7 +279,7 @@ class AUTH:
         state = self.verify(username, password)
         if state is _state.PASS:
             print("Logged in")
-            UIManager.fadeToPage("home", 0.1)
+            UIManager.fadeToPage("home", 0.4)
             def playSound(soundFilePath="./src/audio/startup.m4a"):
                 try:
                     audio3d = Audio3DManager(base.sfxManagerList[0], base.camera)
@@ -451,7 +451,7 @@ class GUI:
             geom=None,
             pressEffect=False,
         )
-        
+
         self.loginScreenBackgroundImage.setTransparency(TransparencyAttrib.MAlpha)
         self.loginScreenUsernameEntry.bind(
             DGG.B1PRESS, lambda _: self.clearTextOnFocus(self.loginScreenUsernameEntry)
