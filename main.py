@@ -36,6 +36,8 @@ sync-video 0
     },
 }
 
+VRAM = {}
+
 
 class UIManager:
     def __init__(self):
@@ -55,8 +57,10 @@ class UIManager:
 
     def fadeToPage(self, pageName, time):
         if pageName in self.pageStack:
-            self.activePage.root.setTransparency(TransparencyAttrib.MAlpha)
-            self.pageStack[pageName].root.setTransparency(TransparencyAttrib.MAlpha)
+            for root in [self.activePage.root, self.activePage.root2]:
+                root.setTransparency(TransparencyAttrib.MAlpha)
+            for root in [self.pageStack[pageName].root, self.pageStack[pageName].root2]:
+                root.setTransparency(TransparencyAttrib.MAlpha)
             self.pageStack[pageName].fadeIn(time)
 
             def final(t):
@@ -169,6 +173,16 @@ class UIManager:
                     else parent
                 )
             )
+            self.root2 = NodePath(name + "_2")
+            self.root2.reparentTo(
+                render2d
+                if parent is None
+                else (
+                    parent.childrenNode
+                    if isinstance(parent, UIManager.Window)
+                    else parent
+                )
+            )
             if parent is not None:
                 parent.children.append(self)
                 parent.children_dict[name] = self
@@ -178,10 +192,12 @@ class UIManager:
         def show(self):
             self.visible = True
             self.root.show()
+            self.root2.show()
 
         def hide(self):
             self.visible = False
             self.root.hide()
+            self.root2.hide()
 
         def showParent(self):
             if not self.parent is None:
@@ -199,6 +215,7 @@ class UIManager:
             self.children.clear()
             self.children_dict.clear()
             self.root.removeNode()
+            self.root2.removeNode()
             self.childrenNode.removeNode()
             if self.parent is not None:
                 self.parent.children.remove(self)
@@ -211,18 +228,20 @@ class UIManager:
             parentWindow.children_dict[self.name] = self
 
         def fadeIn(self, time):
-            self.root.setTransparency(TransparencyAttrib.MAlpha)
-            self.root.setAlphaScale(0)
-            self.root.show()
-            self.root.colorScaleInterval(
-                time, (1, 1, 1, 1), startColorScale=(0, 0, 0, 0)
-            ).start()
+            for win in [self.root, self.root2]:
+                win.setTransparency(TransparencyAttrib.MAlpha)
+                win.setAlphaScale(0)
+                win.show()
+                win.colorScaleInterval(
+                    time, (1, 1, 1, 1), startColorScale=(0, 0, 0, 0)
+                ).start()
 
         def fadeOut(self, time):
-            self.root.setTransparency(TransparencyAttrib.MAlpha)
-            self.root.colorScaleInterval(
-                time, (0, 0, 0, 0), startColorScale=(1, 1, 1, 1)
-            ).start()
+            for win in [self.root, self.root2]:
+                win.setTransparency(TransparencyAttrib.MAlpha)
+                win.colorScaleInterval(
+                    time, (0, 0, 0, 0), startColorScale=(1, 1, 1, 1)
+                ).start()
 
 
 UIManager = UIManager()
@@ -279,25 +298,13 @@ class AUTH:
         state = self.verify(username, password)
         if state is _state.PASS:
             print("Logged in")
-            UIManager.fadeToPage("home", 0.4)
-            def playSound(soundFilePath="./src/audio/startup.m4a"):
-                try:
-                    audio3d = Audio3DManager(base.sfxManagerList[0], base.camera)
-                    sound = audio3d.loadSfx(soundFilePath)
-                    if sound:
-                        sound.play()
-                    else:
-                        print(f"Failed to load sound: {soundFilePath}")
-                except Exception as e:
-                    print(f"Error playing sound: {e}")
-            playSound()
-
         elif state is _state.VAL_INVALID:
             print("Invalid Password")
         elif state is _state.MEM_INVALID:
             print("Invalid Username")
         else:
             print("Unknown Error")
+        return state
 
     def verify(self, username, password) -> _state:
         if username in GLOBALMEM["AUTH"]["users"]:
@@ -316,11 +323,88 @@ class AUTH:
 AUTH = AUTH()
 
 
+class PROGRAM:
+    def __init__(self, path):
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"File not found: {path}")
+        self.path = path
+        jsonFile = open(os.path.join(path, "index.json"), "r")
+        self.data = loads(jsonFile.read())
+        jsonFile.close()
+        self.image = self.data["iconPath"]
+        self.programData = self.data["programData"]
+
+
+class TASKBAR:
+    def __init__(self):
+        self.programs = []
+
+    def load(self, parent: "UIManager.Window" = None):
+        currentPath = os.path.dirname(os.path.abspath(__file__))
+        os.chdir(os.path.join(currentPath, "src", "prgm"))
+        for filepath in os.listdir():
+            if os.path.isdir(filepath):
+                self.addProgram(PROGRAM(filepath))
+        os.chdir(currentPath)
+
+        self.border = DirectFrame(
+            parent=parent.root2,
+            frameColor=(1, 1, 1, 1),
+            frameSize=(-1, 1, 0, 0.125),
+            pos=(0, 0, -1),
+        )
+
+    def addProgram(self, program):
+        self.programs.append(program)
+
+    def removeProgram(self, program):
+        self.programs.remove(program)
+
+    def getPrograms(self):
+        return self.programs
+
+
+TASKBAR = TASKBAR()
+
+
+class TaskManager:
+    def __init__(self):
+        self.tasks = []
+
+    def addTask(self, task, *args, **kwargs):
+        self.tasks.append([task, args, kwargs])
+
+    def removeTask(self, task):
+        for t, a, kw in self.tasks:
+            if t == task:
+                self.tasks.remove([t, a, kw])
+                break
+
+    def update(self):
+        for task, args, kwargs in self.tasks:
+            task(*args, **kwargs)
+
+
+TaskManager = TaskManager()
+
+
 class GUI:
     def setTimeNodes(self, task):
         self.lockScreenTimeNode.setText(time.strftime("%I:%M:%S").lstrip("0"))
         self.lockScreenDateNode.setText(time.strftime("%A, %B %Y"))
         return task.cont
+
+    def setEntryFocus(self, entry):
+        entry["focus"] = 1
+        entry.setFocus()
+        self.clearTextOnFocus(entry)
+
+    def login(self, username, password):
+        result = AUTH.login(username, password)
+        if result == _state.PASS:
+            UIManager.fadeToPage("home", 0.35)
+            TASKBAR.load(self.homeScreen)
+            self.win11StartupSound.play()
 
     def __init__(self, base: "OS"):
         self.base = base
@@ -329,6 +413,7 @@ class GUI:
         self.lockScreenWindow = UIManager.Window("lockScreen", UIManager)
         self.loginWindow = UIManager.Window("login", UIManager)
         self.homeScreen = UIManager.Window("home", UIManager)
+        self.win11StartupSound = self.base.loader.loadSfx("./src/audio/startup.m4a")
 
         self.win11Font = self.base.loader.loadFont(
             "./src/fonts/SegoeUIVF.ttf",
@@ -343,6 +428,7 @@ class GUI:
             geom=None,
             command=lambda: [
                 UIManager.fadeToPage("login", 0.15),
+                self.setEntryFocus(self.loginScreenUsernameEntry),
             ],
             pressEffect=False,
         )
@@ -394,25 +480,6 @@ class GUI:
             parent=self.loginWindow.root,
         )
         self.loginScreenUsernameProfileImage.setTransparency(TransparencyAttrib.MAlpha)
-        self.loginScreenPasswordEntry = DirectEntry(
-            text="",
-            scale=0.05,
-            initialText="Password",
-            numLines=1,
-            focus=0,
-            parent=self.loginWindow.root,
-            pos=(0, 0, -0.15),
-            frameColor=(0.5, 0.5, 0.5, 0.5),
-            text_fg=(1, 1, 1, 1),
-            text_font=self.win11Font,
-            text_align=TextNode.ACenter,
-            relief=DGG.FLAT,
-        )
-
-        self.loginScreenPasswordEntry.bind(
-            DGG.B1PRESS, lambda _: self.clearTextOnFocus(self.loginScreenPasswordEntry)
-        )
-        self.loginScreenPasswordEntry.setTransparency(TransparencyAttrib.MAlpha)
 
         self.loginScreenUsernameEntry = DirectEntry(
             text="",
@@ -427,23 +494,40 @@ class GUI:
             text_font=self.win11Font,
             text_align=TextNode.ACenter,
             relief=DGG.FLAT,
+            command=lambda t: self.setEntryFocus(self.loginScreenPasswordEntry),
         )
+        self.loginScreenUsernameEntry.bind(
+            DGG.B1PRESS, lambda _: self.clearTextOnFocus(self.loginScreenUsernameEntry)
+        )
+        self.loginScreenUsernameEntry.setTransparency(TransparencyAttrib.MAlpha)
 
-        self.loginButton = DirectButton(
-            text="Login",
-            scale=0.09,
-            pos=(0, 0, -0.3),
+        self.loginScreenPasswordEntry = DirectEntry(
+            text="",
+            scale=0.05,
+            initialText="Password",
+            numLines=1,
+            focus=0,
             parent=self.loginWindow.root,
-            frameColor=(0.2, 0.1, 0.3, 1),
+            pos=(0, 0, -0.15),
+            frameColor=(0.5, 0.5, 0.5, 0.5),
             text_fg=(1, 1, 1, 1),
             text_font=self.win11Font,
-            relief=DGG.FLAT,
             text_align=TextNode.ACenter,
-            command=lambda: AUTH.login(self.loginScreenUsernameEntry.get(), self.loginScreenPasswordEntry.get()),
+            relief=DGG.FLAT,
+            obscured=True,
+            command=lambda t: [
+                self.login(
+                    self.loginScreenUsernameEntry.get(),
+                    self.loginScreenPasswordEntry.get(),
+                ),
+            ],
         )
-        self.loginButton.setTransparency(TransparencyAttrib.MAlpha)
+        self.loginScreenPasswordEntry.bind(
+            DGG.B1PRESS, lambda _: self.clearTextOnFocus(self.loginScreenPasswordEntry)
+        )
+        self.loginScreenPasswordEntry.setTransparency(TransparencyAttrib.MAlpha)
 
-        self.homeScreen = DirectButton(
+        self.homeScreenBackgroundImage = DirectButton(
             image="./src/img/windows11background.png",
             scale=(1 * (1920 / 1080), 1, 1),
             parent=self.homeScreen.root,
@@ -451,50 +535,8 @@ class GUI:
             geom=None,
             pressEffect=False,
         )
-
-        self.hotbar = DirectFrame(
-            frameSize=(-1, 1, -0.1, 0.1),
-            frameColor=(1, 1, 1, 1),
-            pos=(0, 0, -1),
-            parent=self.homeScreen,
-        )
-
-        self.winIcon = DirectButton(
-            image="./src/img/windows11icon.png",
-            frameSize=(-0.5, 0.5, -0.5, 0.5),
-            frameColor=(0,0,0,0),
-            scale=(0.05, 1, 0.05),
-            image_scale=(0.7, 1, 1),
-            image_pos=(0, 0, 0),
-            pos=(0, 0, -0.95),
-            parent=self.homeScreen,
-            relief=DGG.FLAT,
-            pressEffect=False,
-        )
-
-        self.winIcon.setTransparency(TransparencyAttrib.MAlpha)
-
-        self.fileExplorerIcon = DirectButton(
-            image="./src/img/windows11fileicon.png",
-            frameSize=(-1, 1, -1, 1),
-            frameColor=(0, 0, 0, 0),
-            scale=(0.05, 1, 0.05),
-            image_scale=(0.6, 1, 1),
-            image_pos=(0, 0, 0),
-            pos=(-0.07, 0, -0.95),
-            parent=self.homeScreen,
-            relief=DGG.FLAT,
-            pressEffect=False,
-        )
-
-        self.fileExplorerIcon.setTransparency(TransparencyAttrib.MAlpha)
-
-
-        self.loginScreenBackgroundImage.setTransparency(TransparencyAttrib.MAlpha)
-        self.loginScreenUsernameEntry.bind(
-            DGG.B1PRESS, lambda _: self.clearTextOnFocus(self.loginScreenUsernameEntry)
-        )
-        self.loginScreenUsernameEntry.setTransparency(TransparencyAttrib.MAlpha)
+        self.homeScreenBackgroundImage.setTransparency(TransparencyAttrib.MAlpha)
+        self.homeScreenBackgroundImage.setBin("background", 0)
 
         self.lockScreenWindow.show()
         base.taskMgr.add(self.setTimeNodes, "setTimeNodes", delay=1)
@@ -522,6 +564,8 @@ class GUI:
 class OS(ShowBase):
     def __init__(self):
         super().__init__()
+        VRAM["OS"] = self
+        VRAM["LOADER"] = self.loader
         self.gui = GUI(self)
 
 

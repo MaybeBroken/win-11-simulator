@@ -1,0 +1,7 @@
+{
+    "name": "Explorer",
+    "execPath": "./src/",
+    "iconPath": "./tex/icon.png",
+    "hover_text": "Explorer",
+    "programData": {}
+}
