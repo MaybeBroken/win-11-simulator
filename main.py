@@ -286,7 +286,7 @@ class API:
         def removeWindow(self, name: str):
             if name in self.windows:
                 del self.windows[name]
-                self.focusWindow(self.windows[name].lastWindow)
+                self.focusWindow(self.lastWindow.id)
 
         def focusWindow(self, name: str):
             if name in self.windows:
