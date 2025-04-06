@@ -1,0 +1,8 @@
+{
+    "name": "Microsoft Store",
+    "execPath": "./src/__init__.py",
+    "iconPath": "./tex/icon.png",
+    "hover_text": "Store",
+    "description": "Microsoft Store",
+    "programData": {}
+}
