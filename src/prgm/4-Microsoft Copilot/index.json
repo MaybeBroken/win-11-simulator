@@ -1,0 +1,8 @@
+{
+    "name": "Microsoft Copilot",
+    "execPath": "./src/__init__.py",
+    "iconPath": "./tex/icon.png",
+    "hover_text": "Copilot",
+    "description": "Microsoft Copilot AI assistant",
+    "programData": {}
+}
