@@ -1,0 +1,11 @@
+{
+    "AUTH": {
+        "users": {
+            "admin": "admin"
+        }
+    },
+    "PANDAPRC": {
+        "PRCFILE": "win-size 1280 720\nwindow-title Windows 11\ntext-font /Windows 11/scripts/src/SegoeUIVF-Regular-Small.ttf\nundecorated true\nclock-mode limited\nclock-frame-rate 0\nshow-frame-rate-meter 0\nframe-rate-meter-update-interval 0.25\nsync-video 0\n",
+        "STARTUP_INJECTOR": "print('No startup injector found.')"
+    }
+}
