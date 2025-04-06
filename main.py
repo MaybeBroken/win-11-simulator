@@ -247,12 +247,51 @@ UIManager = UIManager()
 
 
 class API:
+
     class winTypes:
         SYSTEM = "SYSTEM"
         APPLICATION = "APPLICATION"
         DIALOG = "DIALOG"
         POPUP = "POPUP"
         WIDGET = "WIDGET"
+
+    class WindowStack:
+        windows = {}
+        activeWindow = None
+        globalID = 0
+        globalBin = 0
+
+        def getId(self):
+            self.globalID += 1
+            return self.globalID
+
+        def getBin(self):
+            self.globalBin += 1
+            return self.globalBin
+
+        def addWindow(self, window: "API.Window", name: str):
+            self.windows[name] = window
+            self.lastWindow = self.activeWindow
+            self.activeWindow = window
+            self.activeWindow.setBin("fixed", self.getBin())
+
+        def removeWindow(self, name: str):
+            if name in self.windows:
+                self.windows[name].destroy()
+                del self.windows[name]
+
+        def getWindow(self, name: str):
+            return self.windows.get(name, None)
+
+        def removeWindow(self, name: str):
+            if name in self.windows:
+                del self.windows[name]
+                self.focusWindow(self.windows[name].lastWindow)
+
+        def focusWindow(self, name: str):
+            if name in self.windows:
+                window = self.windows[name]
+                window.setBin("fixed", self.getBin())
 
     class Window:
         def __init__(
@@ -267,6 +306,10 @@ class API:
             self.position = position
             self.size = size
             self.winType = winType
+            self.lastPos = position
+            self.lastMousePos = (0, 0)
+            self.moving = False
+            self.id = API.WindowStack.getId()
             frameSize = (
                 -(1 / (1280 / 2)) * (self.size[0] / 2) * (1280 / 720),
                 (1 / (1280 / 2)) * (self.size[0] / 2) * (1280 / 720),
@@ -278,14 +321,14 @@ class API:
                 self.winType = API.winTypes.APPLICATION
             if self.winType == API.winTypes.APPLICATION:
                 self.root = DirectFrame(
-                    parent=render2d, # type: ignore
+                    parent=aspect2d,  # type: ignore
                     frameColor=frameColor,
                     frameSize=frameSize,
                     pos=(position[0], 0, position[1]),
-                    scale=(1 * (720 / 1280), 1, 1),
+                    relief=DGG.RIDGE,
                 )
-                topBar = DirectFrame(
-                    parent=render2d, # type: ignore
+                self.topBar = DirectButton(
+                    parent=self.root,
                     frameColor=(0.75, 0.75, 0.75, 1),
                     frameSize=(
                         frameSize[0],
@@ -293,17 +336,79 @@ class API:
                         frameSize[3] - 0.075,
                         frameSize[3],
                     ),
-                    pos=(position[0], 0, position[1]),
-                    scale=(1 * (720 / 1280), 1, 1),
+                    relief=DGG.FLAT,
+                    geom=None,
+                    scale=1,
+                    text="",
                 )
-                topBar.bind(DGG.B1PRESS, self.startDrag)
-                topBar.bind(DGG.B1RELEASE, self.stopDrag)
+                self.topBar.bind(DGG.B1PRESS, lambda _: self.startMove())
+                self.topBar.bind(DGG.B1RELEASE, lambda _: self.stopMove())
 
-        def startDrag(self, event):
-            self.root.setPos(self.root.getPos() + (event.getX(), 0, event.getY()))
+                self.topBar.setTransparency(TransparencyAttrib.MAlpha)
+                self.topBarCloseButton = DirectButton(
+                    parent=self.topBar,
+                    text="X",
+                    scale=0.036,
+                    text_scale=1.4,
+                    text_pos=(0, -0.4),
+                    text_fg=(1, 1, 1, 1),
+                    text_font=VRAM["WIN11FONT"],
+                    text_align=TextNode.ACenter,
+                    pos=(frameSize[1] - 0.05, 0, frameSize[3] - 0.0365),
+                    frameColor=(0.9, 0.1, 0.2, 1),
+                    frameSize=(-1.2, 1.2, -1, 1),
+                    relief=DGG.FLAT,
+                    command=self.destroy,
+                )
 
-        def stopDrag(self, event):
-            pass
+                self.topBarNameText = DirectLabel(
+                    parent=self.topBar,
+                    text=name,
+                    text_scale=0.05,
+                    text_pos=(0, 0),
+                    text_fg=(0, 0, 0, 1),
+                    text_font=VRAM["WIN11FONT"],
+                    text_align=TextNode.ALeft,
+                    pos=(frameSize[0] + 0.1, 0, frameSize[3] - 0.038),
+                    frameColor=(0.5, 0.5, 0.5, 0),
+                    relief=DGG.FLAT,
+                )
+
+                taskMgr.add(self.move_task, "move_task")  # type: ignore
+
+            API.WindowStack.addWindow(window=self.root, name=self.id)
+
+        def startMove(self):
+            self.moving = True
+            self.lastMousePos = (
+                base.mouseWatcherNode.getMouse().x,
+                base.mouseWatcherNode.getMouse().y,
+            )
+            API.WindowStack.focusWindow(self.id)
+
+        def stopMove(self):
+            self.moving = False
+
+        def move_task(self, task):
+            if base.mouseWatcherNode.hasMouse() and self.moving:
+                mouse_pos = base.mouseWatcherNode.getMouse()
+                x = mouse_pos.x - self.lastMousePos[0]
+                y = mouse_pos.y - self.lastMousePos[1]
+                self.root.setPos(self.root.getPos() + Vec3(x * (1280 / 720), 0, y))
+                self.lastMousePos = (
+                    mouse_pos.x,
+                    mouse_pos.y,
+                )
+            return task.cont
+
+        def destroy(self):
+            API.WindowStack.removeWindow(self.id)
+            self.root.removeNode()
+            self.topBar.removeNode()
+
+
+API = API()
+API.WindowStack = API.WindowStack()
 
 
 class _state:
