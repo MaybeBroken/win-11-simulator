@@ -246,6 +246,64 @@ class UIManager:
 UIManager = UIManager()
 
 
+class API:
+    class winTypes:
+        SYSTEM = "SYSTEM"
+        APPLICATION = "APPLICATION"
+        DIALOG = "DIALOG"
+        POPUP = "POPUP"
+        WIDGET = "WIDGET"
+
+    class Window:
+        def __init__(
+            self,
+            name: str,
+            position: tuple = (0, 0),
+            size: tuple = (500, 300),
+            frameColor=(1, 1, 1, 1),
+            winType: "API.winTypes" = None,
+        ):
+            self.name = name
+            self.position = position
+            self.size = size
+            self.winType = winType
+            frameSize = (
+                -(1 / (1280 / 2)) * (self.size[0] / 2) * (1280 / 720),
+                (1 / (1280 / 2)) * (self.size[0] / 2) * (1280 / 720),
+                -(1 / (720 / 2)) * (self.size[1] / 2),
+                (1 / (720 / 2)) * (self.size[1] / 2),
+            )
+
+            if self.winType is None:
+                self.winType = API.winTypes.APPLICATION
+            if self.winType == API.winTypes.APPLICATION:
+                self.root = DirectFrame(
+                    parent=render2d,
+                    frameColor=frameColor,
+                    frameSize=frameSize,
+                    pos=(position[0], 0, position[1]),
+                    scale=(1 * (720 / 1280), 1, 1),
+                )
+                topBar = DirectFrame(
+                    parent=render2d,
+                    frameColor=(0.75, 0.75, 0.75, 1),
+                    frameSize=(
+                        frameSize[0],
+                        frameSize[1],
+                        frameSize[3] - 0.075,
+                        frameSize[3],
+                    ),
+                    pos=(position[0], 0, position[1]),
+                    scale=(1 * (720 / 1280), 1, 1),
+                )
+                topBar.bind(DGG.B1PRESS, self.startDrag)
+                topBar.bind(DGG.B1RELEASE, self.stopDrag)
+
+        def startDrag(self, event):
+            self.root.setPos(self.root.getPos() + (event.getX(), 0, event.getY()))
+
+        def stopDrag(self, event):
+            pass
 
 
 class _state:
