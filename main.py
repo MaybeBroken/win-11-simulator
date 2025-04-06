@@ -340,6 +340,7 @@ class PROGRAM:
         self.hover_text = self.data["hover_text"]
         self.description = self.data["description"]
         self.programData = self.data["programData"]
+        os.chdir("..")
 
 
 class TASKBAR:
@@ -377,7 +378,8 @@ class TASKBAR:
 
         program: PROGRAM
         for i, program in enumerate(self.getPrograms()):
-            xPos = 0 - (2 / programsLen) * (i + 1) + 1
+            spacing = 0.135
+            xPos = -0.925 + (i * spacing) + (spacing * (programsLen - 1) / 2)
             outline = OnscreenImage(
                 image="./src/img/rounded_outline.png",
                 scale=(0.07, 0.07, 0.07),
@@ -390,7 +392,7 @@ class TASKBAR:
             programButton = DirectButton(
                 parent=self.parent.root,
                 image=program.image,
-                scale=(0.055),
+                scale=(0.06),
                 pos=(xPos, 0, -0.925),
                 frameColor=(0.5, 0.5, 0.5, 0.5),
                 frameSize=(-1, 1, -1, 1),
@@ -412,20 +414,16 @@ class TASKBAR:
             programHoverText.setColorScale(1, 1, 1, 0)
 
             self.nodes.append([outline, programButton, programHoverText])
-        print("Rebuilt Taskbar")
 
     def addProgram(self, program):
         self.programs.append(program)
-        print(f"Added program: {program.name}")
         self.rebuild()
 
     def removeProgram(self, program):
         self.programs.remove(program)
-        print(f"Removed program: {program.name}")
         self.rebuild()
 
     def getPrograms(self):
-        print("Getting programs")
         return self.programs
 
 
@@ -627,12 +625,48 @@ class GUI:
         entry.setFocus()
 
 
+class MouseOverManager:
+    def __init__(self):
+        self.elements = []
+
+    def registerElement(self, element, callback, *args, **kwargs):
+        """
+        Registers an element with a callback to be triggered when the mouse is over the element.
+        :param element: The NodePath or DirectGUI element to monitor.
+        :param callback: The function to call when the mouse is over the element.
+        """
+        self.elements.append((element, callback, args, kwargs))
+
+    def update(self, task):
+        """
+        Checks if the mouse is over any registered elements and triggers the corresponding callbacks.
+        """
+        if base.mouseWatcherNode.hasMouse():
+            mouse_pos = base.mouseWatcherNode.getMouse()
+            for element, callback, args, kwargs in self.elements:
+                if element.isHidden():
+                    continue
+                bounds = element.getTightBounds()
+                if bounds:
+                    min_bound, max_bound = bounds
+                    if (
+                        min_bound.x <= mouse_pos.x <= max_bound.x
+                        and min_bound.z <= mouse_pos.z <= max_bound.z
+                    ):
+                        callback(*args, **kwargs)
+        return task.cont
+
+
+MouseOverManager = MouseOverManager()
+
+
 class OS(ShowBase):
     def __init__(self):
         super().__init__()
         VRAM["OS"] = self
         VRAM["LOADER"] = self.loader
         self.gui = GUI(self)
+        self.taskMgr.add(TaskManager.update, "TaskManager")  # type: ignore
 
 
 FILEMGR.loadPrefs()
