@@ -15,7 +15,6 @@ from json import loads, dump
 import os
 import atexit
 import time
-from direct.showbase.Audio3DManager import Audio3DManager
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 GLOBALMEM: dict = {}
@@ -247,6 +246,8 @@ class UIManager:
 UIManager = UIManager()
 
 
+
+
 class _state:
     PASS = "PASS"
     FAIL = "FAIL"
@@ -295,16 +296,7 @@ FILEMGR = FILEMGR()
 
 class AUTH:
     def login(self, username, password):
-        state = self.verify(username, password)
-        if state is _state.PASS:
-            print("Logged in")
-        elif state is _state.VAL_INVALID:
-            print("Invalid Password")
-        elif state is _state.MEM_INVALID:
-            print("Invalid Username")
-        else:
-            print("Unknown Error")
-        return state
+        return self.verify(username, password)
 
     def verify(self, username, password) -> _state:
         if username in GLOBALMEM["AUTH"]["users"]:
@@ -332,7 +324,7 @@ class PROGRAM:
         self.data = loads(jsonFile.read())
         jsonFile.close()
         self.name = self.data["name"]
-        self.execPath = self.data["execPath"]
+        self.execPath = os.path.abspath(self.data["execPath"])
         self.image = VRAM["LOADER"].loadTexture(
             "/"
             + os.path.abspath(self.data["iconPath"]).replace("\\", "/").replace(":", "")
@@ -341,6 +333,14 @@ class PROGRAM:
         self.description = self.data["description"]
         self.programData = self.data["programData"]
         os.chdir("..")
+
+    def run(self):
+        with open(self.execPath, "r") as fp:
+            programData = fp.read()
+
+        INJECTOR = """"""
+        programData = INJECTOR + programData
+        exec(programData, globals())
 
 
 class TASKBAR:
@@ -387,7 +387,6 @@ class TASKBAR:
                 parent=self.parent.root,
             )
             outline.setTransparency(TransparencyAttrib.MAlpha)
-            outline.setColorScale(0.5, 0.5, 0.5, 0.5)
 
             programButton = DirectButton(
                 parent=self.parent.root,
@@ -398,6 +397,7 @@ class TASKBAR:
                 frameSize=(-1, 1, -1, 1),
                 geom=None,
                 relief=None,
+                command=program.run,
             )
             programButton.setTransparency(TransparencyAttrib.MAlpha)
 
@@ -405,15 +405,32 @@ class TASKBAR:
                 text=program.hover_text,
                 text_font=VRAM["WIN11FONT"],
                 text_fg=(1, 1, 1, 1),
-                pos=(xPos, 0, -0.85),
+                pos=(xPos, 0, -0.825),
                 scale=0.05,
                 parent=self.parent.root,
-                frameColor=(0, 0, 0, 0),
+                frameColor=(0, 0, 0, 0.25),
             )
             programHoverText.setTransparency(TransparencyAttrib.MAlpha)
+
             programHoverText.setColorScale(1, 1, 1, 0)
+            outline.setColorScale(0.5, 0.5, 0.5, 0)
+
+            def mouseOver(hover, outline, programHoverText):
+                if hover:
+                    programHoverText.setColorScale(1, 1, 1, 1)
+                    outline.setColorScale(0.5, 0.5, 0.5, 1)
+                else:
+                    programHoverText.setColorScale(1, 1, 1, 0)
+                    outline.setColorScale(0.5, 0.5, 0.5, 0)
 
             self.nodes.append([outline, programButton, programHoverText])
+            MouseOverManager.registerElement(
+                element=programButton,
+                hitbox_scale=(0.6, 0.6),
+                callback=mouseOver,
+                outline=outline,
+                programHoverText=programHoverText,
+            )
 
     def addProgram(self, program):
         self.programs.append(program)
@@ -443,9 +460,10 @@ class TaskManager:
                 self.tasks.remove([t, a, kw])
                 break
 
-    def update(self):
+    def update(self, p3d_task):
         for task, args, kwargs in self.tasks:
             task(*args, **kwargs)
+        return p3d_task.cont
 
 
 TaskManager = TaskManager()
@@ -628,33 +646,49 @@ class GUI:
 class MouseOverManager:
     def __init__(self):
         self.elements = []
+        self.activeElements = []
 
-    def registerElement(self, element, callback, *args, **kwargs):
+    def registerElement(self, element, hitbox_scale, callback, *args, **kwargs):
         """
         Registers an element with a callback to be triggered when the mouse is over the element.
         :param element: The NodePath or DirectGUI element to monitor.
         :param callback: The function to call when the mouse is over the element.
         """
-        self.elements.append((element, callback, args, kwargs))
+        self.elements.append((element, hitbox_scale, callback, args, kwargs))
 
-    def update(self, task):
+    def update(self):
         """
         Checks if the mouse is over any registered elements and triggers the corresponding callbacks.
         """
         if base.mouseWatcherNode.hasMouse():
             mouse_pos = base.mouseWatcherNode.getMouse()
-            for element, callback, args, kwargs in self.elements:
-                if element.isHidden():
+            for element, hitbox_scale, callback, args, kwargs in self.elements:
+                if not element or element.isEmpty() or element.isHidden():
                     continue
-                bounds = element.getTightBounds()
-                if bounds:
-                    min_bound, max_bound = bounds
-                    if (
-                        min_bound.x <= mouse_pos.x <= max_bound.x
-                        and min_bound.z <= mouse_pos.z <= max_bound.z
-                    ):
-                        callback(*args, **kwargs)
-        return task.cont
+                bounds = element.getBounds()
+                xmin, xmax, ymin, ymax = bounds
+                transform = element.getTransform(base.render2d)
+                pos: tuple[3] = transform.getPos()
+                scale: tuple[3] = element.getScale()
+                xmin *= scale[0] * hitbox_scale[0]
+                xmax *= scale[0] * hitbox_scale[0]
+                ymin *= scale[2] * hitbox_scale[1]
+                ymax *= scale[2] * hitbox_scale[1]
+
+                xmin += pos[0]
+                xmax += pos[0]
+                ymin += pos[2]
+                ymax += pos[2]
+
+                bounds = (xmin, xmax, ymin, ymax)
+                if xmin <= mouse_pos.x <= xmax and ymin <= mouse_pos.y <= ymax:
+                    if element not in self.activeElements:
+                        self.activeElements.append(element)
+                        callback(True, *args, **kwargs)
+                else:
+                    if element in self.activeElements:
+                        self.activeElements.remove(element)
+                        callback(False, *args, **kwargs)
 
 
 MouseOverManager = MouseOverManager()
@@ -667,6 +701,7 @@ class OS(ShowBase):
         VRAM["LOADER"] = self.loader
         self.gui = GUI(self)
         self.taskMgr.add(TaskManager.update, "TaskManager")  # type: ignore
+        TaskManager.addTask(task=MouseOverManager.update)
 
 
 FILEMGR.loadPrefs()

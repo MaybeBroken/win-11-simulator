@@ -1,6 +1,6 @@
 {
     "name": "Search",
-    "execPath": "./src/",
+    "execPath": "./src/__init__.py",
     "iconPath": "./tex/icon.png",
     "hover_text": "Search",
     "description": "a simple search tool",
