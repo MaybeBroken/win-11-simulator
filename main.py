@@ -278,14 +278,14 @@ class API:
                 self.winType = API.winTypes.APPLICATION
             if self.winType == API.winTypes.APPLICATION:
                 self.root = DirectFrame(
-                    parent=render2d,
+                    parent=render2d, # type: ignore
                     frameColor=frameColor,
                     frameSize=frameSize,
                     pos=(position[0], 0, position[1]),
                     scale=(1 * (720 / 1280), 1, 1),
                 )
                 topBar = DirectFrame(
-                    parent=render2d,
+                    parent=render2d, # type: ignore
                     frameColor=(0.75, 0.75, 0.75, 1),
                     frameSize=(
                         frameSize[0],
