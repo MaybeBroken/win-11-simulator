@@ -1,0 +1,8 @@
+{
+    "name": "Search",
+    "execPath": "./src/",
+    "iconPath": "./tex/icon.png",
+    "hover_text": "Search",
+    "description": "a simple search tool",
+    "programData": {}
+}

@@ -351,7 +351,7 @@ class TASKBAR:
         self.parent = parent
         currentPath = os.path.dirname(os.path.abspath(__file__))
         os.chdir(os.path.join(currentPath, "src", "prgm"))
-        for filepath in os.listdir():
+        for filepath in sorted(os.listdir()):
             if os.path.isdir(filepath):
                 self.addProgram(PROGRAM(filepath))
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -377,7 +377,7 @@ class TASKBAR:
 
         program: PROGRAM
         for i, program in enumerate(self.getPrograms()):
-            xPos = -1 + (2 / (programsLen + 1)) * (i + 1)  # Center the buttons
+            xPos = 0 - (2 / programsLen) * (i + 1) + 1
             outline = OnscreenImage(
                 image="./src/img/rounded_outline.png",
                 scale=(0.07, 0.07, 0.07),
@@ -412,16 +412,20 @@ class TASKBAR:
             programHoverText.setColorScale(1, 1, 1, 0)
 
             self.nodes.append([outline, programButton, programHoverText])
+        print("Rebuilt Taskbar")
 
     def addProgram(self, program):
         self.programs.append(program)
+        print(f"Added program: {program.name}")
         self.rebuild()
 
     def removeProgram(self, program):
-        self.rebuild()
         self.programs.remove(program)
+        print(f"Removed program: {program.name}")
+        self.rebuild()
 
     def getPrograms(self):
+        print("Getting programs")
         return self.programs
 
 

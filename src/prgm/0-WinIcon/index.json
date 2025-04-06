@@ -1,0 +1,8 @@
+{
+    "name": "Windows",
+    "execPath": "./src/",
+    "iconPath": "./tex/icon.png",
+    "hover_text": "Windows",
+    "description": "Windows control button",
+    "programData": {}
+}
