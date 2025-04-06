@@ -286,7 +286,8 @@ class API:
         def removeWindow(self, name: str):
             if name in self.windows:
                 del self.windows[name]
-                self.focusWindow(self.lastWindow.id)
+                if self.lastWindow:
+                    self.focusWindow(self.lastWindow.id)
 
         def focusWindow(self, name: str):
             if name in self.windows:
@@ -373,8 +374,15 @@ class API:
                     frameColor=(0.5, 0.5, 0.5, 0),
                     relief=DGG.FLAT,
                 )
-
                 taskMgr.add(self.move_task, "move_task")  # type: ignore
+            elif self.winType == API.winTypes.SYSTEM:
+                self.root = DirectFrame(
+                    parent=aspect2d,  # type: ignore
+                    frameColor=frameColor,
+                    frameSize=frameSize,
+                    pos=(position[0], 0, position[1]),
+                    relief=DGG.RIDGE,
+                )
 
             API.WindowStack.addWindow(window=self.root, name=self.id)
 
@@ -404,7 +412,6 @@ class API:
         def destroy(self):
             API.WindowStack.removeWindow(self.id)
             self.root.removeNode()
-            self.topBar.removeNode()
 
 
 API = API()
