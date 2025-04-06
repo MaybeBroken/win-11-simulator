@@ -1,0 +1,8 @@
+{
+    "name": "Terminal",
+    "execPath": "./src/__init__.py",
+    "iconPath": "./tex/icon.png",
+    "hover_text": "Terminal",
+    "description": "Command Line Interface",
+    "programData": {}
+}
