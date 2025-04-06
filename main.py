@@ -256,8 +256,9 @@ class API:
         WIDGET = "WIDGET"
 
     class WindowStack:
-        windows = {}
-        activeWindow = None
+        windows: dict[str, "API.Window"] = {}
+        activeWindow: "API.Window" = None
+        lastWindow: "API.Window" = None
         globalID = 0
         globalBin = 0
 
@@ -273,12 +274,16 @@ class API:
             self.windows[name] = window
             self.lastWindow = self.activeWindow
             self.activeWindow = window
-            self.activeWindow.setBin("fixed", self.getBin())
+            if self.lastWindow:
+                self.lastWindow.defocusCommand()
+            self.activeWindow.root.setBin("fixed", self.getBin())
 
         def removeWindow(self, name: str):
             if name in self.windows:
                 self.windows[name].destroy()
                 del self.windows[name]
+                if self.lastWindow:
+                    self.focusWindow(self.lastWindow.id)
 
         def getWindow(self, name: str):
             return self.windows.get(name, None)
@@ -292,7 +297,11 @@ class API:
         def focusWindow(self, name: str):
             if name in self.windows:
                 window = self.windows[name]
-                window.setBin("fixed", self.getBin())
+                window.root.setBin("fixed", self.getBin())
+                self.activeWindow = window
+                if self.lastWindow:
+                    self.lastWindow.defocusCommand()
+                self.lastWindow = window
 
     class Window:
         def __init__(
@@ -384,7 +393,7 @@ class API:
                     relief=DGG.RIDGE,
                 )
 
-            API.WindowStack.addWindow(window=self.root, name=self.id)
+            API.WindowStack.addWindow(window=self, name=self.id)
 
         def startMove(self):
             self.moving = True
@@ -396,6 +405,10 @@ class API:
 
         def stopMove(self):
             self.moving = False
+
+        def defocusCommand(self):
+            if self.winType == API.winTypes.SYSTEM:
+                self.destroy()
 
         def move_task(self, task):
             if base.mouseWatcherNode.hasMouse() and self.moving:
