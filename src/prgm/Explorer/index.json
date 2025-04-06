@@ -3,5 +3,6 @@
     "execPath": "./src/",
     "iconPath": "./tex/icon.png",
     "hover_text": "Explorer",
+    "description": "A simple file explorer",
     "programData": {}
 }

@@ -327,37 +327,98 @@ class PROGRAM:
     def __init__(self, path):
         if not os.path.exists(path):
             raise FileNotFoundError(f"File not found: {path}")
-        self.path = path
-        jsonFile = open(os.path.join(path, "index.json"), "r")
+        os.chdir(path)
+        jsonFile = open("index.json", "r")
         self.data = loads(jsonFile.read())
         jsonFile.close()
-        self.image = self.data["iconPath"]
+        self.name = self.data["name"]
+        self.execPath = self.data["execPath"]
+        self.image = VRAM["LOADER"].loadTexture(
+            "/"
+            + os.path.abspath(self.data["iconPath"]).replace("\\", "/").replace(":", "")
+        )
+        self.hover_text = self.data["hover_text"]
+        self.description = self.data["description"]
         self.programData = self.data["programData"]
 
 
 class TASKBAR:
     def __init__(self):
         self.programs = []
+        self.nodes = []
 
     def load(self, parent: "UIManager.Window" = None):
+        self.parent = parent
         currentPath = os.path.dirname(os.path.abspath(__file__))
         os.chdir(os.path.join(currentPath, "src", "prgm"))
         for filepath in os.listdir():
             if os.path.isdir(filepath):
                 self.addProgram(PROGRAM(filepath))
-        os.chdir(currentPath)
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
         self.border = DirectFrame(
             parent=parent.root2,
             frameColor=(1, 1, 1, 1),
-            frameSize=(-1, 1, 0, 0.125),
-            pos=(0, 0, -1),
+            frameSize=(-1, 1, -0.075, 0.075),
+            pos=(0, 0, -0.925),
         )
+        self.border.setTransparency(TransparencyAttrib.MAlpha)
+        self.rebuild()
+
+    def rebuild(self):
+        programsLen = len(self.getPrograms())
+        if programsLen == 0:
+            return
+        for nodes in self.nodes:
+            for n in nodes:
+                n.removeNode()
+
+        self.nodes.clear()
+
+        program: PROGRAM
+        for i, program in enumerate(self.getPrograms()):
+            xPos = -1 + (2 / (programsLen + 1)) * (i + 1)  # Center the buttons
+            outline = OnscreenImage(
+                image="./src/img/rounded_outline.png",
+                scale=(0.07, 0.07, 0.07),
+                pos=(xPos, 0, -0.925),
+                parent=self.parent.root,
+            )
+            outline.setTransparency(TransparencyAttrib.MAlpha)
+            outline.setColorScale(0.5, 0.5, 0.5, 0.5)
+
+            programButton = DirectButton(
+                parent=self.parent.root,
+                image=program.image,
+                scale=(0.055),
+                pos=(xPos, 0, -0.925),
+                frameColor=(0.5, 0.5, 0.5, 0.5),
+                frameSize=(-1, 1, -1, 1),
+                geom=None,
+                relief=None,
+            )
+            programButton.setTransparency(TransparencyAttrib.MAlpha)
+
+            programHoverText = DirectLabel(
+                text=program.hover_text,
+                text_font=VRAM["WIN11FONT"],
+                text_fg=(1, 1, 1, 1),
+                pos=(xPos, 0, -0.85),
+                scale=0.05,
+                parent=self.parent.root,
+                frameColor=(0, 0, 0, 0),
+            )
+            programHoverText.setTransparency(TransparencyAttrib.MAlpha)
+            programHoverText.setColorScale(1, 1, 1, 0)
+
+            self.nodes.append([outline, programButton, programHoverText])
 
     def addProgram(self, program):
         self.programs.append(program)
+        self.rebuild()
 
     def removeProgram(self, program):
+        self.rebuild()
         self.programs.remove(program)
 
     def getPrograms(self):
@@ -419,6 +480,7 @@ class GUI:
             "./src/fonts/SegoeUIVF.ttf",
             pixelsPerUnit=200,
         )
+        VRAM["WIN11FONT"] = self.win11Font
         self.lockScreenBackgroundButton = DirectButton(
             image="./src/img/lockBackground.jpg",
             image_scale=(1 * (1920 / 1080), 1, 1),
